@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#191812">
+    <meta name="description" content="A hands-on LLM playground. Tune a model, shape a prompt, and watch every token arrive.">
+    <title>Ochre — LLM Playground</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="wordmark" href="#" aria-label="Ochre home">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span>ochre<span class="wordmark-period">.</span></span>
+        </a>
+        <div class="topbar-center"><span class="eyebrow">PLAYGROUND</span><span class="topbar-divider">/</span><span class="topbar-caption">Your prompt, in the wild.</span></div>
+        <div class="topbar-right">
+          <span class="connection-status"><span class="status-dot"></span><span id="connection-label">READY WHEN YOU ARE</span></span>
+          <span class="version-tag">V.01</span>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="control-panel" aria-label="Model settings">
+          <div class="panel-heading">
+            <div><span class="eyebrow">01 — CONFIGURE</span><h1>Model setup</h1></div>
+            <span class="panel-icon" aria-hidden="true">⌘</span>
+          </div>
+
+          <section class="setting-section">
+            <label class="field-label" for="model-select">MODEL <span class="label-note">GROQ API</span></label>
+            <div class="select-wrap">
+              <select id="model-select" aria-label="Model">
+                <option value="llama-3.3-70b-versatile">Llama 3.3 <span>· 70B</span></option>
+                <option value="llama-3.1-8b-instant">Llama 3.1 · 8B</option>
+                <option value="openai/gpt-oss-120b">GPT-OSS · 120B</option>
+                <option value="openai/gpt-oss-20b">GPT-OSS · 20B</option>
+                <option value="qwen/qwen3-32b">Qwen 3 · 32B</option>
+              </select>
+              <span class="select-chevron" aria-hidden="true">⌄</span>
+            </div>
+            <button type="button" class="text-button model-refresh" id="refresh-models">↻ &nbsp;Refresh available models</button>
+          </section>
+
+          <section class="setting-section key-section">
+            <label class="field-label" for="api-key">API KEY <span class="label-note">STAYS IN YOUR BROWSER</span></label>
+            <div class="key-input-wrap">
+              <input id="api-key" type="password" placeholder="gsk_••••••••••••••••" autocomplete="off" spellcheck="false">
+              <button id="toggle-key" type="button" class="icon-button" aria-label="Show API key" title="Show API key">◉</button>
+            </div>
+            <div class="key-foot">
+              <label class="check-label"><input id="remember-key" type="checkbox"><span>Remember this session</span></label>
+              <button id="clear-key" type="button" class="text-button">Clear</button>
+            </div>
+            <p class="helper-copy">Your key is sent directly from this browser to Groq. It never touches a server here.</p>
+          </section>
+
+          <div class="section-rule"></div>
+          <div class="settings-title"><span class="eyebrow">GENERATION</span><span class="settings-live"><span></span> LIVE TUNING</span></div>
+
+          <section class="setting-section slider-section">
+            <div class="setting-row"><label class="field-label" for="temperature">TEMPERATURE</label><output class="value-chip" id="temperature-value" for="temperature">0.70</output></div>
+            <input id="temperature" class="range-input" type="range" min="0" max="2" step="0.01" value="0.7">
+            <div class="range-ends"><span>PRECISE</span><span>CREATIVE</span></div>
+          </section>
+
+          <section class="setting-section slider-section">
+            <div class="setting-row"><label class="field-label" for="max-tokens">MAX TOKENS</label><output class="value-chip" id="max-tokens-value" for="max-tokens">1,024</output></div>
+            <input id="max-tokens" class="range-input" type="range" min="64" max="8192" step="64" value="1024">
+            <div class="range-ends"><span>64</span><span>8,192</span></div>
+          </section>
+
+          <section class="setting-section">
+            <label class="field-label" for="system-prompt">SYSTEM PROMPT <span class="label-note">OPTIONAL</span></label>
+            <textarea id="system-prompt" class="system-textarea" rows="3" placeholder="Set a role, tone, or rules for the model..."></textarea>
+          </section>
+
+          <details class="advanced-settings">
+            <summary><span>Advanced settings</span><span class="eyebrow">+ OPTIONS</span></summary>
+            <div class="advanced-body">
+              <label class="field-label" for="stop-sequences">STOP SEQUENCES</label>
+              <input id="stop-sequences" class="text-input" type="text" placeholder="e.g. ###, END">
+              <p class="helper-copy">Comma-separated. Up to 4 sequences.</p>
+              <label class="field-label" for="top-p">TOP P <span class="label-note">0 — 1</span></label>
+              <input id="top-p" class="text-input" type="number" min="0" max="1" step="0.05" value="1">
+            </div>
+          </details>
+
+          <div class="panel-bottom">
+            <span class="privacy-lock">◇ &nbsp;YOUR KEY. YOUR CALL.</span>
+            <button type="button" id="reset-chat" class="reset-button"><span aria-hidden="true">↺</span> Reset conversation</button>
+          </div>
+        </aside>
+
+        <section class="chat-column" aria-label="Chat playground">
+          <div class="chat-heading">
+            <div><span class="eyebrow">02 — EXPERIMENT</span><h2>Conversation <span class="conversation-count" id="turn-count">0 TURNS</span></h2></div>
+            <div class="chat-toolbar"><span class="model-badge"><span class="badge-dot"></span><span id="active-model">LLAMA 3.3 · 70B</span></span><button type="button" id="clear-conversation" class="icon-button clear-chat" aria-label="Clear conversation" title="Clear conversation">⌫</button></div>
+          </div>
+
+          <div class="conversation" id="conversation" aria-live="polite" aria-label="Conversation messages">
+            <div class="welcome" id="welcome">
+              <div class="welcome-orbit" aria-hidden="true"><span class="orbit-core"></span><span class="orbit-dot"></span></div>
+              <span class="eyebrow welcome-kicker">A LITTLE ROOM TO THINK</span>
+              <h3>Good ideas start<br>with a <em>good prompt.</em></h3>
+              <p>Pick a model, set the temperature, and see what happens. The best way to learn is to try.</p>
+              <div class="prompt-suggestions">
+                <button class="suggestion" type="button" data-prompt="Explain quantum computing like I'm a curious 12-year-old."><span class="suggestion-index">01</span><span>Explain something tricky, simply.</span><span class="suggestion-arrow">↗</span></button>
+                <button class="suggestion" type="button" data-prompt="Write a tiny, atmospheric story about a lighthouse that can see the future."><span class="suggestion-index">02</span><span>Write a tiny, strange story.</span><span class="suggestion-arrow">↗</span></button>
+                <button class="suggestion" type="button" data-prompt="Give me three surprising ways to use a paperclip. Keep it short."><span class="suggestion-index">03</span><span>Find a fresh angle on the ordinary.</span><span class="suggestion-arrow">↗</span></button>
+              </div>
+            </div>
+            <div id="messages" class="messages"></div>
+            <div id="error-banner" class="error-banner" role="alert" hidden></div>
+          </div>
+
+          <div class="composer-area">
+            <div class="composer-meta"><span class="eyebrow">YOUR MESSAGE</span><span class="prompt-stats"><span id="char-count">0</span> CHARS <span class="stats-divider">·</span> <span id="word-count">0</span> WORDS</span></div>
+            <div class="composer">
+              <textarea id="prompt-input" rows="3" aria-label="Your message" placeholder="Ask a question, give it a task, or just see where it goes…" spellcheck="true"></textarea>
+              <div class="composer-footer">
+                <span class="shortcut-hint"><kbd>⌘</kbd><kbd>↵</kbd> TO SEND <span class="stats-divider">·</span> <kbd>ESC</kbd> TO STOP</span>
+                <button id="send-button" type="button" class="send-button"><span id="send-label">Send prompt</span><span class="send-arrow">↗</span></button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="insights-panel" aria-label="Prompt analysis and response metrics">
+          <section class="insight-card analysis-card">
+            <div class="insight-heading"><div><span class="eyebrow">03 — UNDER THE HOOD</span><h2>Prompt signals</h2></div><span class="insight-glyph" aria-hidden="true">⌁</span></div>
+            <p class="insight-intro">A quick read on what's in your prompt.</p>
+            <div class="prompt-score"><span id="prompt-score">—</span><span class="score-caption">PROMPT<br>SCORE</span><div class="score-meter"><span id="score-meter-fill"></span></div></div>
+            <div id="prompt-signals" class="signal-list">
+              <div class="signal-row muted"><span class="signal-mark">○</span><span>Waiting for your prompt</span><span class="signal-value">—</span></div>
+            </div>
+            <div class="analysis-footer"><span>EST. INPUT TOKENS</span><span id="estimated-tokens">—</span></div>
+          </section>
+
+          <section class="insight-card metrics-card">
+            <div class="insight-heading"><div><span class="eyebrow">THE LAST RESPONSE</span><h2>Speed & usage</h2></div><span class="live-pill" id="metrics-status">IDLE</span></div>
+            <div class="metrics-grid">
+              <div class="metric"><span class="metric-value" id="ttft-value">—</span><span class="metric-label">FIRST TOKEN <small>MS</small></span></div>
+              <div class="metric"><span class="metric-value" id="total-time-value">—</span><span class="metric-label">TOTAL TIME <small>SEC</small></span></div>
+              <div class="metric"><span class="metric-value" id="tokens-per-second">—</span><span class="metric-label">SPEED <small>TOK/S</small></span></div>
+            </div>
+            <div class="usage-list">
+              <div><span>Input tokens</span><span id="input-tokens">—</span></div>
+              <div><span>Output tokens</span><span id="output-tokens">—</span></div>
+              <div class="usage-total"><span>Total tokens</span><span id="total-tokens">—</span></div>
+            </div>
+            <p class="usage-note">Each turn sends the full conversation again. Your prompt is part of every request.</p>
+          </section>
+
+          <div class="tip-card"><span class="tip-asterisk">✳</span><p><strong>Try this.</strong> Lower the temperature for focused answers. Turn it up for unexpected ones.</p></div>
+          <div class="aside-footer"><span>BUILT FOR THE CURIOUS</span><span>● &nbsp;BROWSER-SIDE</span></div>
+        </aside>
+      </main>
+      <footer class="page-footer"><span>OCHRE PLAYGROUND <span class="footer-divider">/</span> A SPACE TO EXPERIMENT</span><a href="https://console.groq.com/keys" target="_blank" rel="noreferrer">GET A GROQ API KEY <span aria-hidden="true">↗</span></a></footer>
+    </div>
+  </body>
+</html>
